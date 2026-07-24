@@ -714,12 +714,30 @@ export default function MemberScheduleTab({
               const dateStr  = `${monthYear}-${String(monthNum).padStart(2,"0")}-${String(dayNum).padStart(2,"0")}`;
               const isToday  = dateStr === todayStr;
               const isPast   = dateStr < todayStr;
+              const isSun    = new Date(dateStr + "T00:00:00").getDay() === 0;
               const daySess  = sessions.filter(s => s.date === dateStr);
               const hasPend  = daySess.some(s => pendingSet.has(`${s.date}_${s.time}`));
+              const isDragTarget = dragging && !isPast && !isSun && dateStr !== dragging.date;
 
               return (
-                <div key={i} className="border-r border-b p-1.5"
-                  style={{ borderColor: "#1a1a1a", minHeight: "72px", opacity: isPast && daySess.length === 0 ? 0.35 : 1 }}>
+                <div key={i} className="border-r border-b p-1.5 transition-colors"
+                  onDragOver={isDragTarget ? (e) => { e.preventDefault(); setDragOver(dateStr); } : undefined}
+                  onDragLeave={() => { if (dragOver === dateStr) setDragOver(null); }}
+                  onDrop={isDragTarget ? () => {
+                    if (!dragging) return;
+                    const s = dragging;
+                    setDragging(null);
+                    setDragOver(null);
+                    setMonthlyAction({ session: s, tab: "reschedule", newDate: dateStr, loadingSlots: false, daySlots: {} });
+                    fetchDaySlots(dateStr);
+                  } : undefined}
+                  style={{
+                    borderColor: "#1a1a1a",
+                    minHeight: "72px",
+                    opacity: isPast && daySess.length === 0 ? 0.35 : 1,
+                    backgroundColor: dragOver === dateStr ? "#f9731610" : undefined,
+                    outline: dragOver === dateStr ? "1px solid #f9731640" : undefined,
+                  }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold"
                       style={isToday ? { backgroundColor: "#f97316", color: "#fff" } : { color: isPast ? "#52525b" : "#a1a1aa" }}>
@@ -733,22 +751,26 @@ export default function MemberScheduleTab({
                       const inSub = inSubscription(dateStr);
                       return (
                         <div key={si}
-                          onClick={!isPast ? () => {
+                          draggable={!isPast}
+                          onDragStart={!isPast ? () => { setDragging(s); setDragOver(null); } : undefined}
+                          onDragEnd={() => { setDragging(null); setDragOver(null); }}
+                          onClick={!isPast && !dragging ? () => {
                             setMonthlyAction({ session: s, tab: "reschedule", newDate: dateStr, loadingSlots: false, daySlots: {} });
                             fetchDaySlots(dateStr);
                           } : undefined}
-                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold select-none"
                           style={{
                             backgroundColor: isPending ? "#f9731610" : isPast ? "#1e1e1e" : inSub ? "#f9731620" : "#27272a",
                             color: isPast ? "#52525b" : inSub ? "#f97316" : "#52525b",
                             border: !isPast && !inSub ? "1px solid #3f3f46" : undefined,
-                            cursor: !isPast ? "pointer" : "default",
+                            cursor: !isPast ? "grab" : "default",
+                            opacity: dragging?.date === s.date && dragging?.time === s.time ? 0.4 : 1,
                           }}>
                           {s.time}
                         </div>
                       );
                     })}
-                    {!isPast && daySess.length === 0 && hasPackage && inSubscription(dateStr) && (
+                    {!isPast && !isSun && daySess.length === 0 && hasPackage && inSubscription(dateStr) && !dragging && (
                       <div
                         onClick={() => setNewSessionModal({ date: dateStr, time: "", outsidePackage: packageExhausted })}
                         className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-center"
