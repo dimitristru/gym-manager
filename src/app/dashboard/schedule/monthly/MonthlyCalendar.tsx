@@ -50,6 +50,10 @@ export default function MonthlyCalendar({
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
   const [dragOverHour, setDragOverHour] = useState<string | null>(null); // "hour" for detail panel
 
+  // Drop-to-day slot picker
+  const [dropModal, setDropModal] = useState<{ targetDay: number; item: DragItem } | null>(null);
+  const [dropSaving, setDropSaving] = useState(false);
+
   // Add modal
   const [modal, setModal] = useState<{ hour: number } | null>(null);
   const [bookingType, setBookingType] = useState<"recurring" | "once">("once");
@@ -92,28 +96,39 @@ export default function MonthlyCalendar({
     await fetch(`/api/reservations/${id}`, { method: "DELETE" });
   }
 
-  // ── drop on monthly grid (change day) ────────────────────────────
-  async function onDropDay(targetDay: number) {
+  // ── drop on monthly grid → open slot picker ──────────────────────
+  function onDropDay(targetDay: number) {
     setDragOverDay(null);
     if (!dragItem) return;
+    if (dragItem.fromDay === targetDay) { setDragItem(null); return; }
+    const dow = new Date(year, month - 1, targetDay).getDay();
+    if (dow === 0) { setDragItem(null); return; } // Sunday closed
+    setDropModal({ targetDay, item: dragItem });
+    setDragItem(null);
+  }
 
-    if (dragItem.kind === "reservation") {
-      if (dragItem.fromDay === targetDay) { setDragItem(null); return; }
-      // Move reservation to new date
+  // ── confirm drop with chosen hour ────────────────────────────────
+  async function confirmDrop(hour: number) {
+    if (!dropModal) return;
+    setDropSaving(true);
+    const { targetDay, item } = dropModal;
+    const newTime = `${String(hour).padStart(2, "0")}:00`;
+
+    if (item.kind === "reservation") {
       setReservations((prev) => prev.map((r) =>
-        r.id === dragItem.id ? { ...r, day: targetDay, dateISO: new Date(year, month - 1, targetDay).toISOString() } : r
+        r.id === item.id ? { ...r, day: targetDay, time: newTime, dateISO: new Date(year, month - 1, targetDay).toISOString() } : r
       ));
-      await fetch(`/api/reservations/${dragItem.id}`, {
+      await fetch(`/api/reservations/${item.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: new Date(year, month - 1, targetDay).toISOString() }),
+        body: JSON.stringify({ date: new Date(year, month - 1, targetDay).toISOString(), time: newTime }),
       });
     } else {
-      // Recurring: create a reservation exception for the target date (don't change weeklyDays)
-      setRecurring((prev) => prev.filter((s) => !(s.memberId === dragItem.memberId && s.day === dragItem.fromDay && s.isoWeekDay === dragItem.isoWeekDay && s.time === dragItem.time)));
-      const created = await createReservation(dragItem.memberId, targetDay, dragItem.time);
-      if (created) setReservations((prev) => [...prev, { ...created, day: targetDay }]);
+      setRecurring((prev) => prev.filter((s) => !(s.memberId === item.memberId && s.day === item.fromDay && s.isoWeekDay === item.isoWeekDay && s.time === item.time)));
+      const created = await createReservation(item.memberId, targetDay, newTime);
+      if (created) setReservations((prev) => [...prev, { ...created, day: targetDay, time: newTime }]);
     }
-    setDragItem(null);
+    setDropSaving(false);
+    setDropModal(null);
   }
 
   // ── drop on detail panel (change hour) ───────────────────────────
@@ -499,6 +514,62 @@ export default function MonthlyCalendar({
                   );
                 })
               )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Drop slot-picker modal */}
+      {dropModal && (() => {
+        const { targetDay, item } = dropModal;
+        const dow = dayOfWeek(targetDay);
+        const dayRec = recurring.filter((s) => s.day === targetDay);
+        const dayRes = reservations.filter((r) => r.day === targetDay);
+        const CAPACITY = 2;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setDropModal(null); }}>
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <p className="text-xs text-slate-400">{DAY_NAMES_FULL[dow]} {targetDay} {new Date(year, month - 1, 1).toLocaleDateString("el-GR", { month: "long", year: "numeric" })}</p>
+                <h3 className="font-semibold text-slate-900 mt-0.5">Μεταφορά: <span className="text-blue-600">{item.memberName}</span></h3>
+                <p className="text-xs text-slate-400 mt-0.5">Επίλεξε ώρα στη νέα μέρα</p>
+              </div>
+              <div className="max-h-80 overflow-y-auto px-3 py-3 space-y-1">
+                {HOURS.map((hour) => {
+                  const occupied = [
+                    ...dayRec.filter((s) => parseInt(s.time) === hour),
+                    ...dayRes.filter((r) => parseInt(r.time) === hour),
+                  ];
+                  const isFull = occupied.length >= CAPACITY;
+                  const timeStr = `${String(hour).padStart(2, "0")}:00`;
+                  return (
+                    <button
+                      key={hour}
+                      disabled={isFull || dropSaving}
+                      onClick={() => confirmDrop(hour)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={isFull
+                        ? { backgroundColor: "#f8f8f8", color: "#94a3b8" }
+                        : { backgroundColor: "#eff6ff", color: "#1d4ed8", cursor: "pointer" }
+                      }
+                    >
+                      <span className="font-semibold">{timeStr}</span>
+                      <span className="text-xs">
+                        {isFull
+                          ? "Πλήρες"
+                          : occupied.length === 0
+                            ? "Ελεύθερο"
+                            : `${occupied.map(o => o.memberName).join(", ")} · ${CAPACITY - occupied.length} θέση`
+                        }
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onClick={() => setDropModal(null)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 font-medium rounded-lg hover:bg-slate-200 transition-colors">Ακύρωση</button>
+              </div>
             </div>
           </div>
         );
