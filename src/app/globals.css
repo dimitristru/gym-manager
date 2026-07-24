@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --card: #141414;
+  --card-border: #2a2a2a;
+  --accent: #f97316;
+  --muted: #71717a;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
+/* ── Dark card overrides ────────────────────────────── */
+
+/* White card → dark card */
+.bg-white {
+  background-color: #141414 !important;
+  color: #f4f4f5;
+}
+
+/* Borders */
+.border-slate-200 { border-color: #2a2a2a !important; }
+.border-slate-100 { border-color: #222222 !important; }
+
+/* Text */
+.text-slate-900 { color: #f4f4f5 !important; }
+.text-slate-800 { color: #e4e4e7 !important; }
+.text-slate-700 { color: #d4d4d8 !important; }
+.text-slate-600 { color: #a1a1aa !important; }
+.text-slate-500 { color: #71717a !important; }
+.text-slate-400 { color: #52525b !important; }
+
+/* Inputs */
+input, select, textarea {
+  background-color: #1e1e1e !important;
+  border-color: #333 !important;
+  color: #f4f4f5 !important;
+}
+input::placeholder, textarea::placeholder { color: #555 !important; }
+
+/* Table rows */
+.hover\:bg-slate-50:hover { background-color: #1a1a1a !important; }
+.bg-slate-50 { background-color: #141414 !important; }
+
+/* Dividers */
+.divide-slate-100 > * + * { border-color: #222 !important; }
+.divide-y > * + * { border-color: #222 !important; }
+
+/* Page headings */
+h1 { color: #ffffff; }
+h2, h3 { color: #f4f4f5; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #f97316; }
+
+/* Focus ring orange */
+*:focus-visible { outline: 2px solid #f97316; outline-offset: 2px; }
+
+/* Blue → orange accent for buttons */
+.bg-blue-600 { background-color: #f97316 !important; }
+.bg-blue-700, .hover\:bg-blue-700:hover { background-color: #ea6c00 !important; }
+.text-blue-600 { color: #f97316 !important; }
+.text-blue-700 { color: #ea6c00 !important; }
+.bg-blue-50 { background-color: #1c1208 !important; }
+.text-blue-700.bg-blue-50 { color: #f97316 !important; }
+.ring-blue-500, .focus\:ring-blue-500:focus { --tw-ring-color: #f97316 !important; }
+.border-blue-500 { border-color: #f97316 !important; }

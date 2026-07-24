@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  phone         String?
+  passwordHash  String
+  role          Role      @default(MEMBER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  member        Member?
+}
+
+model Member {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth      DateTime?
+  nickname         String?
+  emergencyContact String?
+  notes            String?
+  photoUrl         String?
+  weeklyDays       String?   // comma-separated day numbers: "1,3,5" = Mon/Wed/Fri
+  createdAt        DateTime  @default(now())
+
+  subscriptions    Subscription[]
+  bookings         ClassBooking[]
+  checkIns         CheckIn[]
+  reservations     MemberReservation[]
+  cancellations    MemberCancellation[]
+  changeRequests        ScheduleChangeRequest[]
+  subscriptionRequests  SubscriptionRequest[]
+}
+
+model SubscriptionPlan {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  durationDays    Int?      // null = ongoing (επ' αόριστον)
+  price           Decimal   @db.Decimal(10, 2)
+  maxClasses      Int?
+  isPersonalized  Boolean   @default(false)
+  pricePerClass   Decimal?  @db.Decimal(10, 2)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  subscriptions        Subscription[]
+  subscriptionRequests SubscriptionRequest[]
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  memberId      String
+  member        Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          SubscriptionPlan   @relation(fields: [planId], references: [id])
+  status        SubscriptionStatus @default(ACTIVE)
+  startDate     DateTime
+  endDate       DateTime
+  classesLeft   Int?
+  createdAt     DateTime           @default(now())
+
+  payments      Payment[]
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  amount         Decimal       @db.Decimal(10, 2)
+  method         PaymentMethod @default(CASH)
+  paidAt         DateTime      @default(now())
+  notes          String?
+}
+
+model Instructor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  specialty String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  classes   GymClass[]
+}
+
+model GymClass {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  instructorId String?
+  instructor   Instructor? @relation(fields: [instructorId], references: [id])
+  capacity     Int
+  durationMin  Int
+  location     String?
+  color        String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+
+  schedules    ClassSchedule[]
+}
+
+model ClassSchedule {
+  id          String   @id @default(cuid())
+  classId     String
+  class       GymClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  startsAt    DateTime
+  endsAt      DateTime
+  isCancelled Boolean  @default(false)
+  cancelNote  String?
+  createdAt   DateTime @default(now())
+
+  bookings    ClassBooking[]
+}
+
+model ClassBooking {
+  id         String        @id @default(cuid())
+  memberId   String
+  member     Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  scheduleId String
+  schedule   ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  bookedAt   DateTime      @default(now())
+  cancelled  Boolean       @default(false)
+
+  @@unique([memberId, scheduleId])
+}
+
+model CheckIn {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  date        DateTime // session date (midnight local)
+  time        String   // scheduled session time "HH:MM"
+  checkedAt   DateTime @default(now())
+  note        String?
+}
+
+model MemberReservation {
+  id        String    @id @default(cuid())
+  memberId  String
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  date      DateTime
+  time      String
+  note      String?
+  movedFrom DateTime? // original date if rescheduled
+  createdAt DateTime  @default(now())
+}
+
+model MemberCancellation {
+  id             String   @id @default(cuid())
+  memberId       String
+  member         Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sessionDate    DateTime
+  sessionTime    String
+  cancelledAt    DateTime @default(now())
+  isLate         Boolean  @default(false)
+  wasRescheduled Boolean  @default(false)
+}
+
+enum RequestType {
+  CANCEL
+  RESCHEDULE
+  NEW_SESSION
+}
+
+enum SubscriptionRequestType {
+  NEW
+  CANCEL_SUB
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ScheduleChangeRequest {
+  id          String        @id @default(cuid())
+  memberId    String
+  member      Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  type        RequestType
+  sessionDate DateTime      // the session being changed
+  sessionTime String
+  newDate     DateTime?     // for RESCHEDULE: requested new date
+  newTime     String?       // for RESCHEDULE: requested new time
+  note        String?       // member's note/reason
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  reviewedAt  DateTime?
+  reviewNote  String?       // admin's response note
+}
+
+model SubscriptionRequest {
+  id             String                  @id @default(cuid())
+  memberId       String
+  member         Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  type           SubscriptionRequestType
+  planId         String?                 // for NEW: requested plan
+  plan           SubscriptionPlan?       @relation(fields: [planId], references: [id])
+  subscriptionId String?                 // for CANCEL_SUB: which subscription
+  note           String?
+  status         RequestStatus           @default(PENDING)
+  createdAt      DateTime                @default(now())
+  reviewedAt     DateTime?
+  reviewNote     String?
+}
