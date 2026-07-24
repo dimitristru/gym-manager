@@ -37,7 +37,7 @@ async function getData() {
   );
 
   // One-time reservations today
-  const reservationsToday = reservations.map((r) => ({
+  const reservationsToday = reservations.map((r: typeof reservations[number]) => ({
     key: `res-${r.id}`,
     memberId: r.memberId,
     memberName: r.member.nickname ?? r.member.user.name,
