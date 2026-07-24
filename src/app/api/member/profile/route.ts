@@ -8,8 +8,9 @@ export async function PATCH(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { email, phone } = await req.json();
+    const { email, phone, name } = await req.json();
     if (!email) return NextResponse.json({ error: "Το email είναι υποχρεωτικό" }, { status: 400 });
+    if (!name?.trim()) return NextResponse.json({ error: "Το όνομα είναι υποχρεωτικό" }, { status: 400 });
 
     // Check email not taken by another user
     const existing = await db.user.findFirst({
@@ -19,10 +20,10 @@ export async function PATCH(req: NextRequest) {
 
     const updated = await db.user.update({
       where: { email: session.user!.email! },
-      data: { email, phone: phone ?? null },
+      data: { email, phone: phone ?? null, name: name.trim() },
     });
 
-    return NextResponse.json({ email: updated.email, phone: updated.phone });
+    return NextResponse.json({ email: updated.email, phone: updated.phone, name: updated.name });
   } catch (err) {
     console.error("[PATCH /api/member/profile]", err);
     return NextResponse.json({ error: "Σφάλμα αποθήκευσης" }, { status: 500 });

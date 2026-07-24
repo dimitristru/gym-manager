@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { version } from "../../package.json";
 
 const navItems = [
   {
@@ -177,6 +178,7 @@ export default function Sidebar({ user, pendingCount = 0 }: SidebarProps) {
           </svg>
           Αποσύνδεση
         </button>
+        <p className="text-center text-[10px] mt-2" style={{ color: "#3f3f46" }}>v{version}</p>
       </div>
     </aside>
   );

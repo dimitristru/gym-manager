@@ -10,13 +10,14 @@ interface Props {
 }
 
 export default function MemberProfileTab({ memberId, userName, userEmail, userPhone }: Props) {
+  const [name, setName] = useState(userName);
   const [email, setEmail] = useState(userEmail);
   const [phone, setPhone] = useState(userPhone ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const hasChanges = email !== userEmail || phone !== (userPhone ?? "");
+  const hasChanges = name !== userName || email !== userEmail || phone !== (userPhone ?? "");
 
   async function save() {
     if (!email.trim()) { setError("Το email είναι υποχρεωτικό"); return; }
@@ -25,7 +26,7 @@ export default function MemberProfileTab({ memberId, userName, userEmail, userPh
     const res = await fetch("/api/member/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), phone: phone.trim() || null }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim() || null }),
     });
     setSaving(false);
     if (res.ok) {
@@ -37,7 +38,7 @@ export default function MemberProfileTab({ memberId, userName, userEmail, userPh
     }
   }
 
-  const initials = userName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -48,7 +49,7 @@ export default function MemberProfileTab({ memberId, userName, userEmail, userPh
           {initials}
         </div>
         <div>
-          <p className="text-lg font-bold text-white">{userName}</p>
+          <p className="text-lg font-bold text-white">{name}</p>
           <p className="text-xs mt-0.5" style={{ color: "#71717a" }}>Μέλος Ground Zero Fitness</p>
         </div>
       </div>
@@ -56,6 +57,19 @@ export default function MemberProfileTab({ memberId, userName, userEmail, userPh
       {/* Edit form */}
       <div className="rounded-2xl p-5 space-y-4" style={{ backgroundColor: "#141414", border: "1px solid #1e1e1e" }}>
         <p className="text-sm font-bold text-white">Στοιχεία επικοινωνίας</p>
+
+        <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: "#a1a1aa" }}>Ονοματεπώνυμο</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-colors"
+            style={{ backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#f4f4f5" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#f9731660")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
+          />
+        </div>
 
         <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: "#a1a1aa" }}>Email</label>
@@ -110,7 +124,7 @@ export default function MemberProfileTab({ memberId, userName, userEmail, userPh
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p className="text-xs" style={{ color: "#52525b" }}>
-          Για αλλαγή ονόματος ή άλλα στοιχεία επικοινωνίας με τον διαχειριστή.
+          Το nickname εμφανίζεται μόνο στον διαχειριστή και δεν μπορεί να αλλαχθεί από εδώ.
         </p>
       </div>
     </div>
