@@ -16,21 +16,47 @@ export async function POST(req: NextRequest) {
     });
     if (!member) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    // Check no duplicate pending request for same session
-    const existing = await db.scheduleChangeRequest.findFirst({
-      where: { memberId, sessionDate: new Date(sessionDate), sessionTime, status: "PENDING" },
-    });
-    if (existing) return NextResponse.json({ error: "Υπάρχει ήδη εκκρεμές αίτημα για αυτή την προπόνηση" }, { status: 409 });
+    const sessionDateObj = new Date(sessionDate);
 
+    // Apply the change immediately (no admin approval needed)
+    if (type === "NEW_SESSION") {
+      await db.memberReservation.create({
+        data: { memberId, date: sessionDateObj, time: sessionTime },
+      });
+    } else if (type === "CANCEL") {
+      const now = new Date();
+      const [h, m] = sessionTime.split(":").map(Number);
+      const sessionDt = new Date(sessionDateObj);
+      sessionDt.setHours(h, m, 0, 0);
+      const isLate = now > new Date(sessionDt.getTime() - 5 * 60 * 60 * 1000);
+      await db.memberCancellation.create({
+        data: { memberId, sessionDate: sessionDateObj, sessionTime, isLate, wasRescheduled: false },
+      });
+    } else if (type === "RESCHEDULE" && newDate && newTime) {
+      const [h, m] = sessionTime.split(":").map(Number);
+      const sessionDt = new Date(sessionDateObj);
+      sessionDt.setHours(h, m, 0, 0);
+      const isLate = new Date() > new Date(sessionDt.getTime() - 5 * 60 * 60 * 1000);
+      await db.memberCancellation.create({
+        data: { memberId, sessionDate: sessionDateObj, sessionTime, isLate, wasRescheduled: true },
+      });
+      await db.memberReservation.create({
+        data: { memberId, date: new Date(newDate), time: newTime, movedFrom: sessionDateObj },
+      });
+    }
+
+    // Record the change with APPROVED status for history
     const request = await db.scheduleChangeRequest.create({
       data: {
         memberId,
         type,
-        sessionDate: new Date(sessionDate),
+        sessionDate: sessionDateObj,
         sessionTime,
         newDate: newDate ? new Date(newDate) : null,
         newTime: newTime || null,
         note: note || null,
+        status: "APPROVED",
+        reviewedAt: new Date(),
       },
     });
 

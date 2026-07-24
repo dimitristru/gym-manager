@@ -206,7 +206,6 @@ export default function MemberScheduleTab({
     });
     setSubmitting(false);
     if (res.ok) {
-      setLocalPending(p => [...p, `${modal.session.date}_${modal.session.time}`]);
       setModal(null);
       setNote("");
       router.refresh();
@@ -229,7 +228,6 @@ export default function MemberScheduleTab({
     });
     setSubmitting(false);
     if (res.ok) {
-      setLocalPending(p => [...p, `${cancelModal.date}_${cancelModal.time}`]);
       setCancelModal(null);
       setCancelNote("");
       router.refresh();
@@ -254,9 +252,8 @@ export default function MemberScheduleTab({
     });
     setSubmitting(false);
     if (res.ok) {
-      // Add locally immediately — no router.refresh() to avoid resetting state
-      setLocalNewSessions(p => [...p, { date, time }]);
       setNewSessionModal(null);
+      router.refresh();
     }
   }
 
