@@ -30,6 +30,7 @@ export default async function MemberPage() {
               take: 20,
             },
             reservations: true,
+            cancellations: true,
           },
         },
       },
@@ -101,7 +102,14 @@ export default async function MemberPage() {
       sessions.push({ date: rDate, time: r.time, type: "reservation" });
     }
   }
-  sessions.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  // Remove cancelled/rescheduled slots
+  const cancelledKeys = new Set(
+    member.cancellations.map((c) => `${localDate(c.sessionDate)}_${c.sessionTime}`)
+  );
+  const filteredSessions = sessions.filter(
+    (s) => !cancelledKeys.has(`${s.date}_${s.time}`)
+  );
+  filteredSessions.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
   // Pending CANCEL/RESCHEDULE keys
   const pendingRequestKeys = member.changeRequests
@@ -172,7 +180,7 @@ export default async function MemberPage() {
       userEmail={user.email}
       userPhone={user.phone ?? null}
       weeklySlots={weeklySlots}
-      sessions={sessions}
+      sessions={filteredSessions}
       pendingRequestKeys={pendingRequestKeys}
       pendingNewSessions={pendingNewSessions}
       activeSubscription={activeSubscription}
