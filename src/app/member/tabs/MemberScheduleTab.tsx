@@ -90,6 +90,15 @@ export default function MemberScheduleTab({
   const [newSessionModal, setNewSessionModal] = useState<{ date: string; time: string; outsidePackage: boolean } | null>(null);
   const [newSessionNote, setNewSessionNote]   = useState("");
 
+  // monthly action modal (click on session in monthly view)
+  const [monthlyAction, setMonthlyAction] = useState<{
+    session: Session;
+    tab: "reschedule" | "cancel";
+    newDate: string;
+    loadingSlots: boolean;
+    daySlots: Record<string, number>; // "HH:MM" -> occupancy
+  } | null>(null);
+
   // ── week days ─────────────────────────────────────────────────────────
   const monday   = getMondayOf(now, weekOffset);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -106,6 +115,67 @@ export default function MemberScheduleTab({
   const monthNum    = monthDate.getMonth() + 1;
   const daysInMonth = new Date(monthYear, monthNum, 0).getDate();
   const firstDow    = (new Date(monthYear, monthNum - 1, 1).getDay() + 6) % 7;
+
+  // ── fetch slots for a specific day (monthly action modal) ────────────
+  async function fetchDaySlots(dateStr: string) {
+    setMonthlyAction(m => m ? { ...m, loadingSlots: true, daySlots: {} } : null);
+    try {
+      const res = await fetch(`/api/member/availability?from=${dateStr}&to=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        const map: Record<string, number> = {};
+        for (const s of data.slots) {
+          const time = s.key.split("_")[1];
+          map[time] = s.count;
+        }
+        setMonthlyAction(m => m ? { ...m, loadingSlots: false, daySlots: map, newDate: dateStr } : null);
+      }
+    } catch {
+      setMonthlyAction(m => m ? { ...m, loadingSlots: false } : null);
+    }
+  }
+
+  async function submitMonthlyReschedule(newTime: string) {
+    if (!monthlyAction) return;
+    setSubmitting(true);
+    const res = await fetch("/api/member/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberId,
+        type: "RESCHEDULE",
+        sessionDate: monthlyAction.session.date,
+        sessionTime: monthlyAction.session.time,
+        newDate: monthlyAction.newDate,
+        newTime,
+      }),
+    });
+    setSubmitting(false);
+    if (res.ok) {
+      setMonthlyAction(null);
+      router.refresh();
+    }
+  }
+
+  async function submitMonthlyCancel() {
+    if (!monthlyAction) return;
+    setSubmitting(true);
+    const res = await fetch("/api/member/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberId,
+        type: "CANCEL",
+        sessionDate: monthlyAction.session.date,
+        sessionTime: monthlyAction.session.time,
+      }),
+    });
+    setSubmitting(false);
+    if (res.ok) {
+      setMonthlyAction(null);
+      router.refresh();
+    }
+  }
 
   // ── fetch availability ────────────────────────────────────────────────
   const fetchAvail = useCallback(async (from: string, to: string) => {
@@ -663,7 +733,10 @@ export default function MemberScheduleTab({
                       const inSub = inSubscription(dateStr);
                       return (
                         <div key={si}
-                          onClick={!isPast ? () => setCancelModal({ date: s.date, time: s.time }) : undefined}
+                          onClick={!isPast ? () => {
+                            setMonthlyAction({ session: s, tab: "reschedule", newDate: dateStr, loadingSlots: false, daySlots: {} });
+                            fetchDaySlots(dateStr);
+                          } : undefined}
                           className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                           style={{
                             backgroundColor: isPending ? "#f9731610" : isPast ? "#1e1e1e" : inSub ? "#f9731620" : "#27272a",
@@ -937,6 +1010,99 @@ export default function MemberScheduleTab({
                 Άκυρο
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Monthly action modal (reschedule / cancel) ── */}
+      {monthlyAction && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+          onClick={e => { if (e.target === e.currentTarget) setMonthlyAction(null); }}>
+          <div className="w-full max-w-md rounded-2xl p-6 space-y-4"
+            style={{ backgroundColor: "#141414", border: "1px solid #2a2a2a" }}>
+
+            {/* Header */}
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "#71717a" }}>
+                {fmt(monthlyAction.session.date)} · {monthlyAction.session.time}
+              </p>
+              <h2 className="font-bold text-white text-lg">Τι θέλεις να κάνεις;</h2>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2">
+              {(["reschedule", "cancel"] as const).map(tab => (
+                <button key={tab} onClick={() => setMonthlyAction(m => m ? { ...m, tab } : null)}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={monthlyAction.tab === tab
+                    ? { backgroundColor: tab === "cancel" ? "#ef444420" : "#f9731620", color: tab === "cancel" ? "#ef4444" : "#f97316", border: `1px solid ${tab === "cancel" ? "#ef444440" : "#f9731640"}` }
+                    : { backgroundColor: "#1a1a1a", color: "#71717a", border: "1px solid #2a2a2a" }}>
+                  {tab === "reschedule" ? "Μεταφορά" : "Ακύρωση"}
+                </button>
+              ))}
+            </div>
+
+            {/* Reschedule tab */}
+            {monthlyAction.tab === "reschedule" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: "#a1a1aa" }}>Νέα ημερομηνία</label>
+                  <input type="date" min={todayStr}
+                    value={monthlyAction.newDate}
+                    onChange={e => { fetchDaySlots(e.target.value); }}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none"
+                    style={{ backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#f4f4f5" }} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-2" style={{ color: "#a1a1aa" }}>Διαθέσιμες ώρες</label>
+                  {monthlyAction.loadingSlots ? (
+                    <p className="text-xs text-center py-3" style={{ color: "#52525b" }}>Φόρτωση...</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {HOURS.map(h => {
+                        const timeStr = `${String(h).padStart(2,"0")}:00`;
+                        const count = monthlyAction.daySlots[timeStr] ?? 0;
+                        const isFull = count >= SLOT_CAPACITY;
+                        const isCurrent = monthlyAction.session.date === monthlyAction.newDate && monthlyAction.session.time === timeStr;
+                        return (
+                          <button key={h}
+                            disabled={isFull || isCurrent || submitting}
+                            onClick={() => submitMonthlyReschedule(timeStr)}
+                            className="py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-30"
+                            style={isFull || isCurrent
+                              ? { backgroundColor: "#1a1a1a", color: "#3f3f46", border: "1px solid #2a2a2a", cursor: "not-allowed" }
+                              : { backgroundColor: "#f9731615", color: "#f97316", border: "1px solid #f9731430" }}>
+                            {timeStr}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Cancel tab */}
+            {monthlyAction.tab === "cancel" && (
+              <div className="space-y-3">
+                <p className="text-sm" style={{ color: "#a1a1aa" }}>
+                  Είσαι σίγουρος ότι θέλεις να ακυρώσεις το μάθημα της {fmt(monthlyAction.session.date)} στις {monthlyAction.session.time};
+                </p>
+                <button onClick={submitMonthlyCancel} disabled={submitting}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
+                  style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+                  {submitting ? "Ακύρωση..." : "Ακύρωση μαθήματος"}
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setMonthlyAction(null)}
+              className="w-full py-2 rounded-xl text-sm font-medium"
+              style={{ backgroundColor: "#1e1e1e", color: "#71717a", border: "1px solid #2a2a2a" }}>
+              Κλείσιμο
+            </button>
           </div>
         </div>
       )}
