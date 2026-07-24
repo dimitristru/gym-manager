@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { DAY_NAMES } from "@/lib/personalized";
 
 interface Member { id: string; user: { name: string; email: string }; weeklyDays: string | null }
-interface Plan { id: string; name: string; price: string | number; durationDays: number; maxClasses: number | null; isPersonalized: boolean; pricePerClass: string | number | null }
+interface Plan { id: string; name: string; price: string | number; durationDays: number | null; maxClasses: number | null; isPersonalized: boolean; pricePerClass: string | number | null }
 
 const MONTH_NAMES = ["Ιανουάριος","Φεβρουάριος","Μάρτιος","Απρίλιος","Μάιος","Ιούνιος","Ιούλιος","Αύγουστος","Σεπτέμβριος","Οκτώβριος","Νοέμβριος","Δεκέμβριος"];
 

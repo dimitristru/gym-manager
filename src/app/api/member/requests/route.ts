@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     // Verify the member belongs to the logged-in user
     const member = await db.member.findFirst({
-      where: { id: memberId, user: { email: session.user.email! } },
+      where: { id: memberId, user: { email: session.user!.email! } },
     });
     if (!member) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 

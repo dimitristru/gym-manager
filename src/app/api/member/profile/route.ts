@@ -12,12 +12,12 @@ export async function PATCH(req: NextRequest) {
 
     // Check email not taken by another user
     const existing = await db.user.findFirst({
-      where: { email, NOT: { email: session.user.email! } },
+      where: { email, NOT: { email: session.user!.email! } },
     });
     if (existing) return NextResponse.json({ error: "Αυτό το email χρησιμοποιείται ήδη" }, { status: 409 });
 
     const updated = await db.user.update({
-      where: { email: session.user.email! },
+      where: { email: session.user!.email! },
       data: { email, phone: phone ?? null },
     });
 

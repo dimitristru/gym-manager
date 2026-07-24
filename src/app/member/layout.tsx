@@ -10,7 +10,7 @@ export default async function MemberLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0a0a0a" }}>
-      <MemberNav userName={session.user.name ?? ""} />
+      <MemberNav userName={session.user!.name ?? ""} />
       <main className="max-w-2xl mx-auto px-4 py-8">{children}</main>
     </div>
   );

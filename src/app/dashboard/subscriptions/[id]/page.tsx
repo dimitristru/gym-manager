@@ -88,7 +88,7 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ i
             <p className="text-xs text-slate-400 tracking-wider font-medium">ΜΑΘΗΜΑΤΑ</p>
             <p className="text-sm font-semibold text-slate-900 mt-1">
               {sub.plan.isPersonalized
-                ? classCount !== null ? `${classCount} μαθ. × ${format.currency(sub.plan.pricePerClass!)}` : "—"
+                ? classCount !== null ? `${classCount} μαθ. × ${format.currency(Number(sub.plan.pricePerClass!))}` : "—"
                 : sub.classesLeft == null ? "Απεριόριστα" : `${sub.classesLeft} απομένουν`}
             </p>
           </div>
@@ -101,7 +101,7 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ i
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Προσωποποιημένο πακέτο · {classCount} μαθήματα ×{" "}
-            {format.currency(sub.plan.pricePerClass!)} ={" "}
+            {format.currency(Number(sub.plan.pricePerClass!))} ={" "}
             <span className="font-semibold text-slate-900">{format.currency(planPrice)}</span>
           </div>
         )}
@@ -132,7 +132,7 @@ export default async function SubscriptionPage({ params }: { params: Promise<{ i
               {sub.payments.map((p) => (
                 <div key={p.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{format.currency(p.amount)}</p>
+                    <p className="text-sm font-medium text-slate-900">{format.currency(Number(p.amount))}</p>
                     <p className="text-xs text-slate-400">{format.date(p.paidAt)} · {methodLabel[p.method]}</p>
                   </div>
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />

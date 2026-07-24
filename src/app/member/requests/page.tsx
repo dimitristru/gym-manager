@@ -25,7 +25,7 @@ export default async function MemberRequestsPage() {
   if (!session) redirect("/login");
 
   const member = await db.member.findFirst({
-    where: { user: { email: session.user.email! } },
+    where: { user: { email: session.user!.email! } },
   });
   if (!member) redirect("/member");
 
