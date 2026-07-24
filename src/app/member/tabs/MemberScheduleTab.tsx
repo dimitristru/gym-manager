@@ -662,16 +662,27 @@ export default function MemberScheduleTab({
                       const isPending = pendingSet.has(`${s.date}_${s.time}`);
                       const inSub = inSubscription(dateStr);
                       return (
-                        <div key={si} className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                        <div key={si}
+                          onClick={!isPast ? () => setCancelModal({ date: s.date, time: s.time }) : undefined}
+                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                           style={{
                             backgroundColor: isPending ? "#f9731610" : isPast ? "#1e1e1e" : inSub ? "#f9731620" : "#27272a",
                             color: isPast ? "#52525b" : inSub ? "#f97316" : "#52525b",
                             border: !isPast && !inSub ? "1px solid #3f3f46" : undefined,
+                            cursor: !isPast ? "pointer" : "default",
                           }}>
-                          {s.time} {isPending ? "⏳" : !inSub && !isPast ? "↻" : ""}
+                          {s.time}
                         </div>
                       );
                     })}
+                    {!isPast && daySess.length === 0 && hasPackage && inSubscription(dateStr) && (
+                      <div
+                        onClick={() => setNewSessionModal({ date: dateStr, time: "", outsidePackage: packageExhausted })}
+                        className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-center"
+                        style={{ backgroundColor: "#10b98110", color: "#10b98170", border: "1px dashed #10b98130", cursor: "pointer" }}>
+                        +
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -852,7 +863,7 @@ export default function MemberScheduleTab({
                 disabled={submitting || !modal.newDate || !modal.newTime}
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
                 style={{ backgroundColor: "#f97316", color: "#fff" }}>
-                {submitting ? "Αποστολή..." : "Υποβολή αιτήματος"}
+                {submitting ? "Μεταφορά..." : "Μεταφορά μαθήματος"}
               </button>
               <button onClick={() => setModal(null)}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -872,11 +883,21 @@ export default function MemberScheduleTab({
           <div className="w-full max-w-md rounded-2xl p-6 space-y-4"
             style={{ backgroundColor: "#141414", border: "1px solid #2a2a2a" }}>
             <div>
-              <h2 className="font-bold text-white text-lg">Αίτημα νέου μαθήματος</h2>
+              <h2 className="font-bold text-white text-lg">Νέο μάθημα</h2>
               <p className="text-sm mt-1" style={{ color: "#71717a" }}>
-                {fmt(newSessionModal.date)} · {newSessionModal.time}
+                {fmt(newSessionModal.date)}{newSessionModal.time ? ` · ${newSessionModal.time}` : ""}
               </p>
             </div>
+            {newSessionModal.time === "" && (
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: "#a1a1aa" }}>Επέλεξε ώρα</label>
+                <input type="time" min="09:00" max="21:00"
+                  value={newSessionModal.time}
+                  onChange={e => setNewSessionModal(m => m ? { ...m, time: e.target.value } : null)}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none"
+                  style={{ backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#f4f4f5" }} />
+              </div>
+            )}
 
             {/* Package status */}
             {!newSessionModal.outsidePackage && sessionsRemaining !== null && (
@@ -904,14 +925,11 @@ export default function MemberScheduleTab({
               </div>
             )}
 
-            <p className="text-xs" style={{ color: "#71717a" }}>
-              Το αίτημά σου θα αποσταλεί στον admin για έγκριση. Μόλις εγκριθεί, το μάθημα θα εμφανιστεί στο πρόγραμμά σου.
-            </p>
             <div className="flex gap-3">
-              <button onClick={submitNewSession} disabled={submitting}
+              <button onClick={submitNewSession} disabled={submitting || !newSessionModal.time}
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
                 style={{ backgroundColor: newSessionModal.outsidePackage ? "#f59e0b" : "#f97316", color: "#fff" }}>
-                {submitting ? "Αποστολή..." : "Υποβολή αιτήματος"}
+                {submitting ? "Κράτηση..." : "Κράτηση μαθήματος"}
               </button>
               <button onClick={() => setNewSessionModal(null)}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -931,7 +949,7 @@ export default function MemberScheduleTab({
           <div className="w-full max-w-md rounded-2xl p-6 space-y-4"
             style={{ backgroundColor: "#141414", border: "1px solid #2a2a2a" }}>
             <div>
-              <h2 className="font-bold text-white text-lg">Αίτημα ακύρωσης</h2>
+              <h2 className="font-bold text-white text-lg">Ακύρωση μαθήματος</h2>
               <p className="text-sm mt-1" style={{ color: "#71717a" }}>
                 {fmt(cancelModal.date)} · {cancelModal.time}
               </p>
@@ -949,7 +967,7 @@ export default function MemberScheduleTab({
               <button onClick={submitCancel} disabled={submitting}
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
                 style={{ backgroundColor: "#ef4444", color: "#fff" }}>
-                {submitting ? "Αποστολή..." : "Υποβολή ακύρωσης"}
+                {submitting ? "Ακύρωση..." : "Ακύρωση μαθήματος"}
               </button>
               <button onClick={() => setCancelModal(null)}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium"
