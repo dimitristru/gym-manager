@@ -45,7 +45,7 @@ async function getData(weekOffset: number) {
   ]);
 
   // Recurring slots for Mon–Sat of this week
-  const recurringSlots = members.flatMap((m) =>
+  const recurringSlots = members.flatMap((m: typeof members[number]) =>
     parseWeeklySlots(m.weeklyDays).map((slot) => ({
       memberId: m.id,
       memberName: m.nickname ?? m.user.name,

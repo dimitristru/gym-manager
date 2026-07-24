@@ -23,7 +23,7 @@ async function getData() {
   ]);
 
   // Recurring sessions today (from weeklyDays)
-  const recurringToday = members.flatMap((m) =>
+  const recurringToday = members.flatMap((m: typeof members[number]) =>
     parseWeeklySlots(m.weeklyDays)
       .filter((s) => s.day === isoDay)
       .map((s) => ({

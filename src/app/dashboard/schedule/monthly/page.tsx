@@ -34,7 +34,7 @@ async function getData(year: number, month: number) {
   ]);
 
   const daysInMonth = end.getDate();
-  const recurringSlots = members.flatMap((m) => {
+  const recurringSlots = members.flatMap((m: typeof members[number]) => {
     return parseWeeklySlots(m.weeklyDays).flatMap((slot) => {
       const results = [];
       for (let d = 1; d <= daysInMonth; d++) {
