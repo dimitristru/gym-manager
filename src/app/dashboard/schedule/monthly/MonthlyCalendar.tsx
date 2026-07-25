@@ -246,9 +246,9 @@ export default function MonthlyCalendar({
         )}
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
       {/* Monthly grid */}
-      <div className={`rounded-2xl overflow-hidden transition-all ${selectedDay ? "w-[55%]" : "flex-1"}`}>
+      <div className={`rounded-2xl overflow-hidden transition-all ${selectedDay ? "lg:w-[55%]" : "flex-1"}`}>
         <div className="grid grid-cols-7 border-b border-slate-200">
           {DAY_NAMES_SHORT.map((n) => (
             <div key={n} className="py-3 text-center text-xs font-semibold text-slate-500 tracking-wider">{n}</div>

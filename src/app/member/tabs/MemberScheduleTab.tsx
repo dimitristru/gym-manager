@@ -470,8 +470,9 @@ export default function MemberScheduleTab({
         )}
 
         <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #1e1e1e" }}>
+          <div className="overflow-x-auto">
           {/* Header row */}
-          <div className="grid border-b" style={{ gridTemplateColumns: "44px repeat(7,1fr)", backgroundColor: "#141414", borderColor: "#1e1e1e" }}>
+          <div className="grid border-b" style={{ gridTemplateColumns: "44px repeat(7,minmax(44px,1fr))", minWidth: "360px", backgroundColor: "#141414", borderColor: "#1e1e1e" }}>
             <div />
             {weekDays.map((d, i) => {
               const isToday = isoDate(d) === todayStr;
@@ -491,7 +492,7 @@ export default function MemberScheduleTab({
           <div style={{ backgroundColor: "#0f0f0f", maxHeight: "520px", overflowY: "auto" }}>
             {HOURS.map(hour => (
               <div key={hour} className="grid border-b last:border-b-0"
-                style={{ gridTemplateColumns: "44px repeat(7,1fr)", borderColor: "#1a1a1a", minHeight: "68px" }}>
+                style={{ gridTemplateColumns: "44px repeat(7,minmax(44px,1fr))", minWidth: "360px", borderColor: "#1a1a1a", minHeight: "68px" }}>
                 {/* Hour label */}
                 <div className="flex items-start justify-end pr-2 pt-1.5">
                   <span className="text-[10px] font-medium" style={{ color: "#3f3f46" }}>
@@ -634,6 +635,7 @@ export default function MemberScheduleTab({
               </div>
             ))}
           </div>
+          </div>{/* end overflow-x-auto */}
 
           {/* Legend */}
           <div className="flex items-center gap-4 px-4 py-2.5 flex-wrap" style={{ backgroundColor: "#111111", borderTop: "1px solid #1e1e1e" }}>
@@ -697,13 +699,14 @@ export default function MemberScheduleTab({
         </div>
 
         <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #1e1e1e" }}>
-          <div className="grid grid-cols-7" style={{ backgroundColor: "#141414", borderBottom: "1px solid #1e1e1e" }}>
+          <div className="overflow-x-auto">
+          <div className="grid grid-cols-7" style={{ minWidth: "320px", backgroundColor: "#141414", borderBottom: "1px solid #1e1e1e" }}>
             {DAY_SHORT.map(d => (
               <div key={d} className="py-2 text-center text-[11px] font-semibold" style={{ color: "#52525b" }}>{d}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7" style={{ backgroundColor: "#0f0f0f" }}>
+          <div className="grid grid-cols-7" style={{ minWidth: "320px", backgroundColor: "#0f0f0f" }}>
             {Array.from({ length: totalCells }, (_, i) => {
               const dayNum  = i - firstDow + 1;
               const isValid = dayNum >= 1 && dayNum <= daysInMonth;
@@ -783,6 +786,7 @@ export default function MemberScheduleTab({
               );
             })}
           </div>
+          </div>{/* end overflow-x-auto */}
         </div>
       </div>
     );

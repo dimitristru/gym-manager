@@ -74,17 +74,17 @@ const navItems = [
 interface SidebarProps {
   user: { name?: string | null; email?: string | null };
   pendingCount?: number;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ user, pendingCount = 0 }: SidebarProps) {
+export default function Sidebar({ user, pendingCount = 0, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 flex flex-col flex-shrink-0" style={{ backgroundColor: "#111111", borderRight: "1px solid #222222" }}>
+    <aside className="w-64 flex flex-col flex-shrink-0 h-full" style={{ backgroundColor: "#111111", borderRight: "1px solid #222222" }}>
       {/* Logo */}
       <div className="px-6 py-5" style={{ borderBottom: "1px solid #1e1e1e" }}>
         <div className="flex items-center gap-3">
-          {/* Ground Zero infinity icon */}
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
             <svg viewBox="0 0 100 60" className="w-10 h-7" fill="none">
               <path
@@ -93,10 +93,17 @@ export default function Sidebar({ user, pendingCount = 0 }: SidebarProps) {
               />
             </svg>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-black text-white text-sm tracking-tight leading-none">GROUND ZERO</p>
             <p className="text-[10px] tracking-[0.25em] font-semibold" style={{ color: "#f97316" }}>FITNESS</p>
           </div>
+          {onClose && (
+            <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg" style={{ color: "#71717a" }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -112,6 +119,7 @@ export default function Sidebar({ user, pendingCount = 0 }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
               style={
                 isActive

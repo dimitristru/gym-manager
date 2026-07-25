@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import DashboardShell from "@/components/DashboardShell";
 import { db } from "@/lib/db";
 
 export default async function DashboardLayout({
@@ -18,11 +18,8 @@ export default async function DashboardLayout({
   const pendingCount = schedPending + subPending;
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: "#0a0a0a" }}>
-      <Sidebar user={session.user ?? {}} pendingCount={pendingCount} />
-      <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "#0f0f0f" }}>
-        <div className="p-8">{children}</div>
-      </main>
-    </div>
+    <DashboardShell user={session.user ?? {}} pendingCount={pendingCount}>
+      {children}
+    </DashboardShell>
   );
 }

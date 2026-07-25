@@ -12,7 +12,7 @@ export default async function MemberLayout({ children }: { children: React.React
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#0a0a0a" }}>
       <MemberNav userName={session.user!.name ?? ""} />
-      <main className="max-w-2xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-5 sm:py-8">{children}</main>
       <footer className="text-center py-4">
         <p className="text-xs" style={{ color: "#3f3f46" }}>v{version}</p>
       </footer>
